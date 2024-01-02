@@ -1,7 +1,7 @@
-# Gentledog user service
+# Gentledog members service
 
 ### 서비스 구성 모듈
-- user
+- members
 - orders
 - wish
 - review
