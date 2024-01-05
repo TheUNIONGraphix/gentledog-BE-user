@@ -39,8 +39,11 @@ bin/
 **/application-local.yml
 **/application-local.yaml
 **/application.properties
+src/main/resources/local
 
-
+### QueryDsl
+**/generated
+src/main/generated/
 
 
 ### git ignore
