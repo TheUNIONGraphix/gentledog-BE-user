@@ -1,9 +1,11 @@
 pipeline {
     // 환경설정 (도커허브와 jenkins)
     environment {
+        sh 'echo 환경설정 시작'
         repository = "gentledog/gentledog" //dockerHub id와 repository 이름
         DOCKERHUB_CREDENTIALS = credentials('jenkins') // jenkins에 등록해놓은 docker hub credentials 이름
         dockerImage = ''
+        sh 'echo 환경설정 종료'
     }
 
     agent any
@@ -13,9 +15,11 @@ pipeline {
             steps {
                 // 빌드에 실패하면 중지
                 sh '''
+                    echo 이미지 빌드 시작
                     chmod +x gradlew || true
                     ./gradlew build
                     dockerImage = docker.build repository + ":${BUILD_NUMBER}"
+                    echo 이미지 빌드 종료
                 '''
             }
         }
@@ -23,7 +27,9 @@ pipeline {
         stage('DockerHub Login'){
             steps {
                 sh '''
-                    echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                    echo 도커 허브 로그인 시작
+                    echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
+                    echo 도커 허브 로그인 종료
                 '''
             }
         }
@@ -33,7 +39,9 @@ pipeline {
                 script {
                     // BUILD_NUMBER = 현재 빌드의 일련번호로, 젠킨스에서 제공됨
                     sh '''
-                        docker push $repository:$BUILD_NUMBER
+                        echo 도커 허브에 이미지 푸쉬 시작
+                        docker push $repository:${BUILD_NUMBER}
+                        echo 도커 허브에 이미지 푸쉬 종료
                     '''
                 }
             }
