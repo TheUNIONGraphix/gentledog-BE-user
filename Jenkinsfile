@@ -2,7 +2,7 @@ pipeline {
     // 환경설정 (도커허브와 jenkins)
     environment {
         repository = "gentledog/gentledog" //dockerHub id와 repository 이름
-        DOCKERHUB_CREDENTIALS = credentials('jenkins') // jenkins에 등록해놓은 docker hub credentials 이름
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub_credentials') // jenkins에 등록해놓은 docker hub credentials 이름
         dockerImage = ''
     }
 
