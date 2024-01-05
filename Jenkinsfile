@@ -1,11 +1,9 @@
 pipeline {
     // 환경설정 (도커허브와 jenkins)
     environment {
-        sh 'echo 환경설정 시작'
         repository = "gentledog/gentledog" //dockerHub id와 repository 이름
         DOCKERHUB_CREDENTIALS = credentials('jenkins') // jenkins에 등록해놓은 docker hub credentials 이름
         dockerImage = ''
-        sh 'echo 환경설정 종료'
     }
 
     agent any
