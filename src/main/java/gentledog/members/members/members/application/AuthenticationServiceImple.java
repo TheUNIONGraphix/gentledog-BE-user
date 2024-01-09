@@ -3,15 +3,19 @@ package gentledog.members.members.members.application;
 import gentledog.members.members.dog.entity.DogList;
 import gentledog.members.members.dog.infrastructure.DogListRepository;
 import gentledog.members.global.common.response.BaseResponseStatus;
+import gentledog.members.members.members.dto.in.SignInInDto;
+import gentledog.members.members.members.dto.in.SignUpInDto;
+import gentledog.members.members.members.dto.out.RegenerateTokenOutDto;
+import gentledog.members.members.members.dto.out.SignInOutDto;
 import gentledog.members.members.members.security.JwtTokenProvider;
 import gentledog.members.global.common.exception.BaseException;
 import gentledog.members.global.common.util.RedisUtil;
-import gentledog.members.members.members.dto.SignInRequestDto;
-import gentledog.members.members.members.dto.SignUpRequestDto;
+import gentledog.members.members.members.webdto.request.SignInRequestDto;
+import gentledog.members.members.members.webdto.request.SignUpRequestDto;
 import gentledog.members.members.members.entity.Members;
 import gentledog.members.members.members.infrastructure.MembersRepository;
-import gentledog.members.members.members.response.SignInResponse;
-import gentledog.members.members.members.response.SignUpResponse;
+import gentledog.members.members.members.webdto.response.SignInResponseDto;
+import gentledog.members.members.members.webdto.response.SignUpResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -50,28 +54,28 @@ public class AuthenticationServiceImple implements AuthenticationService{
      */
 
     @Override
-    public void signUp(SignUpRequestDto signUpRequestDto) {
+    public void signUp(SignUpInDto signInOutDto) {
 
-        if (membersRepository.existsByMembersEmail(signUpRequestDto.getMembersEmail())) {
+        if (membersRepository.existsByMembersEmail(signInOutDto.getMembersEmail())) {
             throw new BaseException(BaseResponseStatus.DUPLICATED_MEMBERS);
         }
 
-        Members members = modelMapper.map(signUpRequestDto, Members.class);
+        Members members = modelMapper.map(signInOutDto, Members.class);
 
         members.hashPassword(members.getPassword());
         log.info("members is : {}" , members);
         membersRepository.save(members);
 
-        SignUpResponse.builder()
+        SignUpResponseDto.builder()
                 .membersEmail(members.getMembersEmail())
                 .build();
     }
 
     @Override
-    public SignInResponse signIn(SignInRequestDto signInRequestDto) {
+    public SignInOutDto signIn(SignInInDto signInInDto) {
 
         // 로그인 하는 이메일이 없다면 에러
-        Members members = membersRepository.findByMembersEmail(signInRequestDto.getMembersEmail())
+        Members members = membersRepository.findByMembersEmail(signInInDto.getMembersEmail())
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.FAILED_TO_LOGIN));
 
         // 강아지 리스트에서 대표 반려견을 찾고 해당하는 반려견의 정보를 넘겨준다.
@@ -84,14 +88,14 @@ public class AuthenticationServiceImple implements AuthenticationService{
         if (members.getDeletedAt() != null) {
             throw new BaseException(BaseResponseStatus.WITHDRAWAL_MEMBERS);
         }
-        log.info("signInRequestDto is : {}" , signInRequestDto.getPassword());
+        log.info("signInRequestDto is : {}" , signInInDto.getPassword());
         log.info("members is : {}" , members.getPassword());
 
         // 회원정보 일치하지 않으면 에러
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        signInRequestDto.getMembersEmail(),
-                        signInRequestDto.getPassword()
+                        signInInDto.getMembersEmail(),
+                        signInInDto.getPassword()
                 )
         );
 
@@ -101,7 +105,7 @@ public class AuthenticationServiceImple implements AuthenticationService{
         log.info("accessToken is : {}" , accessToken);
         log.info("refreshToken is : {}" , refreshToken);
 
-        return SignInResponse.builder()
+        return SignInOutDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .membersEmail(members.getMembersEmail())
@@ -111,7 +115,7 @@ public class AuthenticationServiceImple implements AuthenticationService{
                 .build();
     }
 
-    public SignInResponse regenerateToken(String email, String token) {
+    public RegenerateTokenOutDto regenerateToken(String email, String token) {
 
 
         String refreshToken = token.substring(7);
@@ -152,7 +156,7 @@ public class AuthenticationServiceImple implements AuthenticationService{
 
 
 
-        return SignInResponse.builder()
+        return RegenerateTokenOutDto.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .membersEmail(email)

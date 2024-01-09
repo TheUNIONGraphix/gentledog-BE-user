@@ -16,6 +16,7 @@ import java.util.Collection;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString
+@Table(name = "members", catalog = "members")
 public class Members extends BaseTimeEntity implements UserDetails {
 
     @Id

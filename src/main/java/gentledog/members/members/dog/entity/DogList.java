@@ -11,6 +11,7 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString
+@Table(name = "dog_list", catalog = "members")
 public class DogList extends BaseTimeEntity {
 
     @Id

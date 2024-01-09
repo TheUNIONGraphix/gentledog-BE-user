@@ -1,24 +1,26 @@
 package gentledog.members.members.dog.application;
 
-import gentledog.members.members.dog.dto.DogDefaultUpdateRequestDto;
-import gentledog.members.members.dog.dto.DogRegistrationRequestDto;
-import gentledog.members.members.dog.dto.DogSignUpRegistrationRequestDto;
-import gentledog.members.members.dog.dto.DogUpdateRequestDto;
-import gentledog.members.members.dog.response.DogBreedInfoResponse;
-import gentledog.members.members.dog.response.DogIdInfoResponse;
-import gentledog.members.members.dog.response.DogInfoResponse;
+import gentledog.members.members.dog.dto.in.CreateDogInDto;
+import gentledog.members.members.dog.dto.in.CreateSignUpPreviousDogInDto;
+import gentledog.members.members.dog.dto.out.GetDogBreedOutDto;
+import gentledog.members.members.dog.dto.out.GetDogListOutDto;
+import gentledog.members.members.dog.dto.out.GetDogOutDto;
+import gentledog.members.members.dog.webdto.request.UpdateDefaultDogRequestDto;
+import gentledog.members.members.dog.webdto.request.UpdateDogRequestDto;
+import gentledog.members.members.dog.webdto.response.GetDogIdResponseDto;
+import gentledog.members.members.dog.webdto.response.GetDogResponseDto;
 
 import java.util.List;
 
 public interface DogService {
 
-    void signUpRegisterDog(DogSignUpRegistrationRequestDto dogSignUpRegistrationRequestDto);
-    void registerDog(String membersEmail, DogRegistrationRequestDto dogRegistrationRequestDto);
-    List<DogBreedInfoResponse> getDogBreedInfo();
-    DogInfoResponse getDogInfo(String membersEmail, Long dogId);
-    List<DogInfoResponse> getDogInfo(String membersEmail);
+    void signUpRegisterDog(CreateSignUpPreviousDogInDto createSignUpPreviousDogInDto);
+    void registerDog(String membersEmail, CreateDogInDto createDogInDto);
+    List<GetDogBreedOutDto> getDogBreedList();
+    List<GetDogListOutDto> getDogList(String membersEmail);
+    GetDogOutDto getDogById(String membersEmail, Long dogId);
     List<Long> getDogBreedInfoByEngName(String engName);
-    void updateDog(Long dogListId, DogUpdateRequestDto dogUpdateRequestDto);
-    DogIdInfoResponse updateRepresentativeDog(String membersEmail, DogDefaultUpdateRequestDto dogDefaultUpdateRequestDto);
+    void updateDog(Long dogListId, UpdateDogRequestDto dogUpdateRequestDto);
+    GetDogIdResponseDto updateRepresentativeDog(String membersEmail, UpdateDefaultDogRequestDto updateDefaultDogRequestDto);
     void deleteDog(Long dogId);
 }

@@ -1,14 +1,19 @@
 package gentledog.members.members.address.application;
 
-import gentledog.members.members.address.dto.AddressDefaultUpdateRequestDto;
-import gentledog.members.members.address.dto.AddressRegistrationRequestDto;
+import gentledog.members.members.address.dto.in.CreateAddressInDto;
+import gentledog.members.members.address.dto.in.UpdateDefaultAddressInDto;
+import gentledog.members.members.address.dto.out.GetAddressOutDto;
+import gentledog.members.members.address.dto.out.GetDefaultAddressOutDto;
+import gentledog.members.members.address.webdto.request.UpdateDefaultAddressRequestDto;
+import gentledog.members.members.address.webdto.request.CreateAddressRequestDto;
 import gentledog.members.members.address.entity.Address;
 import gentledog.members.members.address.entity.AddressList;
 import gentledog.members.members.address.infrastructure.AddressListRepository;
 import gentledog.members.members.address.infrastructure.AddressRepository;
-import gentledog.members.members.address.response.AddressInfoResponse;
+import gentledog.members.members.address.webdto.response.GetAddressResponseDto;
 import gentledog.members.global.common.response.BaseResponseStatus;
 import gentledog.members.global.common.exception.BaseException;
+import gentledog.members.members.address.webdto.response.GetDefaultAddressResponseDto;
 import gentledog.members.members.members.entity.Members;
 import gentledog.members.members.members.infrastructure.MembersRepository;
 import lombok.RequiredArgsConstructor;
@@ -41,10 +46,10 @@ public class AddressServiceImple implements AddressService {
     /**
      * 1. 배송지 등록
      * @param membersEmail
-     * @param addressRegistrationRequestDto
+     * @param createAddressInDto
      */
     @Override
-    public void registerAddress(String membersEmail, AddressRegistrationRequestDto addressRegistrationRequestDto) {
+    public void createAddress(String membersEmail, CreateAddressInDto createAddressInDto) {
         Members members = membersRepository.findByMembersEmail(membersEmail)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
@@ -53,7 +58,7 @@ public class AddressServiceImple implements AddressService {
          * address에 default true값을 넣어준다.
          */
 
-        if (addressRegistrationRequestDto.getDefaultAddress()) {
+        if (createAddressInDto.getDefaultAddress()) {
             AddressList addressList1 = addressListRepository.findByMembersIdAndDefaultAddress(members.getId(),
                     true);
 
@@ -64,14 +69,14 @@ public class AddressServiceImple implements AddressService {
         }
 
         // addressRegistrationRequestDto를 address 엔터티로 매핑
-        Address address = modelMapper.map(addressRegistrationRequestDto, Address.class);
+        Address address = modelMapper.map(createAddressInDto, Address.class);
         addressRepository.save(address);
 
         // addresslist의 default값 변경
         AddressList addressList = AddressList.builder()
                 .address(address)
                 .members(members)
-                .defaultAddress(addressRegistrationRequestDto.getDefaultAddress())
+                .defaultAddress(createAddressInDto.getDefaultAddress())
                 .build();
 
         addressListRepository.save(addressList);
@@ -82,7 +87,7 @@ public class AddressServiceImple implements AddressService {
      * @return
      */
     @Override
-    public List<AddressInfoResponse> findAddress(String membersEmail) {
+    public List<GetAddressOutDto> getAddress(String membersEmail) {
         Members members = membersRepository.findByMembersEmail(membersEmail)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
@@ -93,32 +98,34 @@ public class AddressServiceImple implements AddressService {
         return addressListList.stream().map(item -> {
             // 주소지 엔터티를 조회
             Address address = item.getAddress();
-            // 주소지 엔터티를 AddressInfoResponse로 매핑
 
-            AddressInfoResponse addressInfoResponse = modelMapper.map(address, AddressInfoResponse.class);
-            // 주소지 엔터티의 defaultAddress값을 AddressInfoResponse에 넣어준다.
-            addressInfoResponse = addressInfoResponse.toBuilder()
-                    .addressId(item.getAddress().getId())
+            // 주소지 엔터티를 AddressInfoResponse 매핑
+            GetAddressOutDto getAddressOutDto = modelMapper.map(address, GetAddressOutDto.class);
+
+            // 주소지 엔터티의 defaultAddress GetAddressOutDto 넣어준다.
+            getAddressOutDto = getAddressOutDto.toBuilder()
+                    .id(item.getAddress().getId())
                     .defaultAddress(item.getDefaultAddress())
                     .build();
-            return addressInfoResponse;
+            log.info("{}", getAddressOutDto);
+            return getAddressOutDto;
         }).toList();
 
     }
 
     @Override
-    public AddressInfoResponse findDefaultAddress(String membersEmail) {
+    public GetDefaultAddressOutDto getDefaultAddress(String membersEmail) {
         Members members = membersRepository.findByMembersEmail(membersEmail)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
         AddressList addressList = addressListRepository.findByMembersIdAndDefaultAddress(members.getId(), true);
         if (addressList != null) {
             Address address = addressList.getAddress();
-            AddressInfoResponse addressInfoResponse = modelMapper.map(address, AddressInfoResponse.class);
-            addressInfoResponse = addressInfoResponse.toBuilder()
+            GetDefaultAddressOutDto getDefaultAddressOutDto = modelMapper.map(address, GetDefaultAddressOutDto.class);
+            getDefaultAddressOutDto = getDefaultAddressOutDto.toBuilder()
                     .defaultAddress(addressList.getDefaultAddress())
                     .build();
-            return addressInfoResponse;
+            return getDefaultAddressOutDto;
         } else {
             return null;
         }
@@ -126,16 +133,16 @@ public class AddressServiceImple implements AddressService {
 
     /**
      * @param addressId
-     * @param addressRegistrationRequestDto
+     * @param createAddressInDto
      */
     @Override
-    public void updateAddress(String membersEmail, Long addressId, AddressRegistrationRequestDto addressRegistrationRequestDto) {
+    public void updateAddress(String membersEmail, Long addressId, CreateAddressInDto createAddressInDto) {
         Members members = membersRepository.findByMembersEmail(membersEmail)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
         // addressList에서 true값이 들어오고 기존에 기존에 다른 default true값이 있다면 false로 변경 하고
         // address에 default true값을 넣어준다.
-        if (addressRegistrationRequestDto.getDefaultAddress()) {
+        if (createAddressInDto.getDefaultAddress()) {
             AddressList addressList1 = addressListRepository.findByMembersIdAndDefaultAddress(members.getId(),
                     true);
 
@@ -144,36 +151,35 @@ public class AddressServiceImple implements AddressService {
             }
         }
 
-        //
         Address address = addressRepository.findById(addressId)
                         .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_ADDRESS));
-        address.updateAddress(addressRegistrationRequestDto);
+        address.updateAddress(createAddressInDto);
 
         AddressList addressList = addressListRepository.findByMembersIdAndAddressId(members.getId(), addressId);
-        addressList.updateDefaultAddress(addressRegistrationRequestDto.getDefaultAddress());
+        addressList.updateDefaultAddress(createAddressInDto.getDefaultAddress());
 
     }
 
     /**
      * @param membersEmail
-     * @param addressDefaultUpdateRequestDto
+     * @param updateDefaultAddressInDto
      */
     @Override
-    public void updateDefaultAddress(String membersEmail, AddressDefaultUpdateRequestDto addressDefaultUpdateRequestDto) {
+    public void updateDefaultAddress(String membersEmail, UpdateDefaultAddressInDto updateDefaultAddressInDto) {
 
         Members members = membersRepository.findByMembersEmail(membersEmail)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
         // 1. oldAddress로 addressList의 defaultAddress를 false로 변경
-        if (addressDefaultUpdateRequestDto.getOldDefaultAddressId() != null) {
+        if (updateDefaultAddressInDto.getOldDefaultAddressId() != null) {
             AddressList addressList = addressListRepository.findByMembersIdAndAddressId(members.getId(),
-                    addressDefaultUpdateRequestDto.getOldDefaultAddressId());
+                    updateDefaultAddressInDto.getOldDefaultAddressId());
             addressList.updateDefaultAddress(false);
         }
 
         // 2. newAddress로 addressList의 defaultAddress를 true로 변경
         AddressList addressList = addressListRepository.findByMembersIdAndAddressId(members.getId(),
-                addressDefaultUpdateRequestDto.getNewDefaultAddressId());
+                updateDefaultAddressInDto.getNewDefaultAddressId());
         addressList.updateDefaultAddress(true);
     }
 
@@ -183,8 +189,6 @@ public class AddressServiceImple implements AddressService {
      */
     @Override
     public void deleteAddress(Long addressId) {
-
-
 
         AddressList addressList = addressListRepository.findByAddressId(addressId);
         addressListRepository.delete(addressList);
