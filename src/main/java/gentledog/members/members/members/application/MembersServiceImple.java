@@ -2,11 +2,14 @@ package gentledog.members.members.members.application;
 
 import gentledog.members.global.common.response.BaseResponseStatus;
 import gentledog.members.global.common.exception.BaseException;
-import gentledog.members.members.members.dto.MembersInfoUpdateDto;
+import gentledog.members.members.members.dto.in.UpdateMembersInDto;
+import gentledog.members.members.members.dto.out.GetMembersEmailOutDto;
+import gentledog.members.members.members.dto.out.GetMembersOutDto;
+import gentledog.members.members.members.webdto.request.UpdateMembersRequestDto;
 import gentledog.members.members.members.entity.Members;
 import gentledog.members.members.members.infrastructure.MembersRepository;
-import gentledog.members.members.members.response.MembersFindEmailResponse;
-import gentledog.members.members.members.response.MembersInfoResponse;
+import gentledog.members.members.members.webdto.response.GetMembersEmailResponseDto;
+import gentledog.members.members.members.webdto.response.GetMembersResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -36,11 +39,11 @@ public class MembersServiceImple implements MembersService {
     // 1. 유저 정보 조회
     @Override
     @Transactional(readOnly = true)
-    public MembersInfoResponse getMembersInfo(String email) {
+    public GetMembersOutDto getMembers(String email) {
         Members members = membersRepository.findByMembersEmail(email)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
         log.info("members is : {}", members);
-        return MembersInfoResponse.builder()
+        return GetMembersOutDto.builder()
                 .membersEmail(members.getMembersEmail())
                 .membersName(members.getMembersName())
                 .membersPhoneNumber(members.getMembersPhoneNumber())
@@ -51,25 +54,25 @@ public class MembersServiceImple implements MembersService {
 
     // 2. 유저 정보 수정
     @Override
-    public void updateMembersInfo(String email, MembersInfoUpdateDto membersInfoUpdateDto) {
+    public void updateMembers(String email, UpdateMembersInDto updateMembersInDto) {
         Members members = membersRepository.findByMembersEmail(email)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
-        members.updateMembersInfo(membersInfoUpdateDto.getMembersEmail()
-                , membersInfoUpdateDto.getMembersName()
-                , membersInfoUpdateDto.getMembersPhoneNumber()
-                , membersInfoUpdateDto.getMembersAge()
-                , membersInfoUpdateDto.getMembersGender());
+        members.updateMembersInfo(updateMembersInDto.getMembersEmail(),
+                updateMembersInDto.getMembersName(),
+                updateMembersInDto.getMembersPhoneNumber(),
+                updateMembersInDto.getMembersAge(),
+                updateMembersInDto.getMembersGender());
 
     }
 
     // 3. 유저 이메일 찾기
     @Override
     @Transactional(readOnly = true)
-    public MembersFindEmailResponse findMembersEmail(String membersPhoneNumber) {
+    public GetMembersEmailOutDto getMembersEmail(String membersPhoneNumber) {
         Members members = membersRepository.findByMembersPhoneNumber(membersPhoneNumber)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
-        return MembersFindEmailResponse.builder()
+        return GetMembersEmailOutDto.builder()
                 .membersEmail(members.getMembersEmail())
                 .build();
 
@@ -113,7 +116,5 @@ public class MembersServiceImple implements MembersService {
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
         members.deactivateMembers();
     }
-
-
 
 }

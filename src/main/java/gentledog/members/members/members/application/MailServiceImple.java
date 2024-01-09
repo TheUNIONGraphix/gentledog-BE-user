@@ -1,6 +1,5 @@
 package gentledog.members.members.members.application;
 
-
 import gentledog.members.global.common.response.BaseResponseStatus;
 import gentledog.members.global.common.exception.BaseException;
 import gentledog.members.global.common.util.RedisUtil;
@@ -59,7 +58,6 @@ public class MailServiceImple implements MailService{
     public MimeMessage createEmailForm(String email) throws MessagingException {
 
         String authCode = createdCode();
-        log.info("authCode is : {}", authCode);
         MimeMessage message = mailSender.createMimeMessage();
         message.addRecipients(MimeMessage.RecipientType.TO, email);
         message.setText("<div style=\"font-family: 'Apple SD Gothic Neo', 'sans-serif' !important; width: 540px; height: 600px; border-top: 4px solid {$point_color}; margin: 100px auto; padding: 30px 0; box-sizing: border-box;\">\n" +
@@ -104,7 +102,7 @@ public class MailServiceImple implements MailService{
     }
 
     @Override
-    public boolean verifyEmail(String email) {
+    public boolean isDuplicateEmail(String email) {
         // 이메일이 존재한다면 이미 가입된 유저
         Optional<Members> members = membersRepository.findByMembersEmail(email);
 
@@ -124,7 +122,10 @@ public class MailServiceImple implements MailService{
      * @param code
      */
     public void verifyEmailCode(String email, String code) {
+        log.info("email : {}", email);
+
         String codeFoundByEmail = redisUtil.getData(email);
+
 
         if (codeFoundByEmail != null && codeFoundByEmail.equals(code)) {
             redisUtil.deleteData(email);

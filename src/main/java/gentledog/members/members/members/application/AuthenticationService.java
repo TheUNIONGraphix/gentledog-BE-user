@@ -1,14 +1,17 @@
 package gentledog.members.members.members.application;
 
 
-import gentledog.members.members.members.dto.SignInRequestDto;
-import gentledog.members.members.members.dto.SignUpRequestDto;
-import gentledog.members.members.members.response.SignInResponse;
+import gentledog.members.members.members.dto.in.SignInInDto;
+import gentledog.members.members.members.dto.in.SignUpInDto;
+import gentledog.members.members.members.dto.out.RegenerateTokenOutDto;
+import gentledog.members.members.members.dto.out.SignInOutDto;
+import gentledog.members.members.members.webdto.request.SignUpRequestDto;
+import gentledog.members.members.members.webdto.response.SignInResponseDto;
 
 public interface AuthenticationService {
 
-    void signUp(SignUpRequestDto signUpRequestDto);
-    SignInResponse signIn(SignInRequestDto signInRequestDto);
+    void signUp(SignUpInDto signUpInDto);
+    SignInOutDto signIn(SignInInDto signInInDto);
     void signOut(String accessToken);
-    SignInResponse regenerateToken(String email, String token);
+    RegenerateTokenOutDto regenerateToken(String email, String token);
 }

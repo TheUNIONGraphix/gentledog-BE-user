@@ -9,6 +9,7 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString
+@Table(name = "dog_breed", catalog = "members")
 public class DogBreed {
 
     @Id

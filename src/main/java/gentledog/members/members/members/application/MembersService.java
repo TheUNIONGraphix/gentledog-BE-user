@@ -1,14 +1,15 @@
 package gentledog.members.members.members.application;
 
-import gentledog.members.members.members.dto.MembersInfoUpdateDto;
-import gentledog.members.members.members.response.MembersFindEmailResponse;
-import gentledog.members.members.members.response.MembersInfoResponse;
+import gentledog.members.members.members.dto.in.UpdateMembersInDto;
+import gentledog.members.members.members.dto.out.GetMembersEmailOutDto;
+import gentledog.members.members.members.dto.out.GetMembersOutDto;
+import gentledog.members.members.members.webdto.request.UpdateMembersRequestDto;
 
 public interface MembersService {
 
-    MembersInfoResponse getMembersInfo(String email);
-    void updateMembersInfo(String email, MembersInfoUpdateDto membersInfoUpdateDto);
-    MembersFindEmailResponse findMembersEmail(String membersPhoneNumber);
+    GetMembersOutDto getMembers(String email);
+    void updateMembers(String email, UpdateMembersInDto updateMembersInDto);
+    GetMembersEmailOutDto getMembersEmail(String membersPhoneNumber);
     void updateMembersPassword(String membersEmail, String newPassword);
     void withdraw(String membersEmail);
 

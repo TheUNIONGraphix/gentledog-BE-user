@@ -1,13 +1,19 @@
 package gentledog.members.members.address.presentation;
 
 import gentledog.members.members.address.application.AddressService;
-import gentledog.members.members.address.dto.AddressDefaultUpdateRequestDto;
-import gentledog.members.members.address.dto.AddressRegistrationRequestDto;
-import gentledog.members.members.address.response.AddressInfoResponse;
+import gentledog.members.members.address.dto.in.CreateAddressInDto;
+import gentledog.members.members.address.dto.in.UpdateDefaultAddressInDto;
+import gentledog.members.members.address.dto.out.GetAddressOutDto;
+import gentledog.members.members.address.dto.out.GetDefaultAddressOutDto;
+import gentledog.members.members.address.webdto.request.UpdateDefaultAddressRequestDto;
+import gentledog.members.members.address.webdto.request.CreateAddressRequestDto;
+import gentledog.members.members.address.webdto.response.GetAddressResponseDto;
 import gentledog.members.global.common.response.BaseResponse;
+import gentledog.members.members.address.webdto.response.GetDefaultAddressResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +25,7 @@ import java.util.List;
 public class AddressController {
 
     private final AddressService addressService;
+    private final ModelMapper modelMapper;
 
     /**
      * 1. 배송지 등록
@@ -30,47 +37,67 @@ public class AddressController {
 
     @Operation(summary = "배송지 등록", description = "배송지 등록", tags = { "Members Address" })
     @PostMapping("")
-    public BaseResponse<?> addressRegister(@RequestHeader("membersEmail") String membersEmail,
-                                           @RequestBody AddressRegistrationRequestDto addressRegistrationRequestDto) {
-        addressService.registerAddress(membersEmail, addressRegistrationRequestDto);
+    public BaseResponse<?> createAddress(@RequestHeader("membersEmail") String membersEmail,
+                                         @RequestBody CreateAddressRequestDto createAddressRequestDto) {
+
+        CreateAddressInDto createAddressInDto = modelMapper.map(createAddressRequestDto, CreateAddressInDto.class);
+        addressService.createAddress(membersEmail, createAddressInDto);
         return new BaseResponse<>();
     }
 
     @Operation(summary = "배송지 조회", description = "배송지 조회", tags = { "Members Address" })
     @GetMapping("")
-    public BaseResponse<List<AddressInfoResponse>> addressFind(@RequestHeader("membersEmail") String membersEmail) {
-        List<AddressInfoResponse> addressInfoResponse = addressService.findAddress(membersEmail);
-        return new BaseResponse<>(addressInfoResponse);
+    public BaseResponse<List<GetAddressResponseDto>> getAddress(@RequestHeader("membersEmail") String membersEmail) {
+
+        List<GetAddressOutDto> getAddressOutDtos = addressService.getAddress(membersEmail);
+
+        // getAddressOutDtos 값들을 하나씩 꺼내서 GetAddressResponseDto로 변환
+        List<GetAddressResponseDto> getAddressResponseDtos = getAddressOutDtos.stream()
+                .map(item -> modelMapper.map(item, GetAddressResponseDto.class))
+                .toList();
+
+        return new BaseResponse<>(getAddressResponseDtos);
+
     }
 
     @Operation(summary = "배송지 수정", description = "배송지 수정", tags = { "Members Address" })
     @PutMapping("")
-    public BaseResponse<?> addressUpdate(@RequestHeader("membersEmail") String membersEmail,
+    public BaseResponse<?> updateAddress(@RequestHeader("membersEmail") String membersEmail,
                                          @RequestParam("addressId") Long addressId,
-                                         @RequestBody AddressRegistrationRequestDto addressRegistrationRequestDto) {
-        addressService.updateAddress(membersEmail, addressId, addressRegistrationRequestDto);
+                                         @RequestBody CreateAddressRequestDto createAddressRequestDto) {
+
+        CreateAddressInDto createAddressInDto = modelMapper.map(createAddressRequestDto, CreateAddressInDto.class);
+        addressService.updateAddress(membersEmail, addressId, createAddressInDto);
         return new BaseResponse<>();
     }
 
     @Operation(summary = "대표 배송지 조회", description = "대표 배송지 조회", tags = { "Members Address" })
     @GetMapping("/default")
-    public BaseResponse<AddressInfoResponse> addressFindDefault(@RequestHeader("membersEmail") String membersEmail) {
-        AddressInfoResponse addressInfoResponse = addressService.findDefaultAddress(membersEmail);
-        return new BaseResponse<>(addressInfoResponse);
+    public BaseResponse<GetDefaultAddressResponseDto> getDefaultAddress(@RequestHeader("membersEmail") String membersEmail) {
+
+        GetDefaultAddressOutDto getDefaultAddressOutDto = addressService.getDefaultAddress(membersEmail);
+
+        GetDefaultAddressResponseDto getDefaultAddressResponseDto = modelMapper.map(getDefaultAddressOutDto,
+                GetDefaultAddressResponseDto.class);
+
+        return new BaseResponse<>(getDefaultAddressResponseDto);
     }
 
     @Operation(summary = "대표 배송지 변경", description = "대표 배송지 변경", tags = { "Members Address" })
     @PutMapping("/default")
-    public BaseResponse<?> addressUpdateDefault(@RequestHeader("membersEmail") String membersEmail,
-                                                @RequestBody AddressDefaultUpdateRequestDto
-                                                        addressDefaultUpdateRequestDto) {
-        addressService.updateDefaultAddress(membersEmail, addressDefaultUpdateRequestDto);
+    public BaseResponse<?> updateDefaultAddress(@RequestHeader("membersEmail") String membersEmail,
+                                                @RequestBody UpdateDefaultAddressRequestDto
+                                                        updateDefaultAddressRequestDto) {
+
+        UpdateDefaultAddressInDto updateDefaultAddressInDto = modelMapper.map(updateDefaultAddressRequestDto,
+                UpdateDefaultAddressInDto.class);
+        addressService.updateDefaultAddress(membersEmail, updateDefaultAddressInDto);
         return new BaseResponse<>();
     }
 
-    @Operation(summary = "배송지 삭제", description = "배송지 삭제", tags = { "Members Address" })
+    @Operation(summary = "배송지 삭제", description = "배송지 진짜 삭제", tags = { "Members Address" })
     @DeleteMapping("")
-    public BaseResponse<?> addressDelete(@RequestParam("addressId") Long addressId) {
+    public BaseResponse<?> deleteAddress(@RequestParam("addressId") Long addressId) {
         addressService.deleteAddress(addressId);
         return new BaseResponse<>();
     }

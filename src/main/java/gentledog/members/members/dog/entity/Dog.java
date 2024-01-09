@@ -1,6 +1,6 @@
 package gentledog.members.members.dog.entity;
 
-import gentledog.members.members.dog.dto.DogUpdateRequestDto;
+import gentledog.members.members.dog.webdto.request.UpdateDogRequestDto;
 import gentledog.members.global.common.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,6 +11,7 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString
+@Table(name = "dog", catalog = "members")
 public class Dog extends BaseTimeEntity {
 
     @Id
@@ -52,7 +53,7 @@ public class Dog extends BaseTimeEntity {
     private DogBreed dogBreed;
 
     // 1. 강아지 정보 수정
-    public void updateDog(DogUpdateRequestDto dogUpdateRequestDto){
+    public void updateDog(UpdateDogRequestDto dogUpdateRequestDto){
         this.dogName = dogUpdateRequestDto.getDogName();
         this.dogAge = dogUpdateRequestDto.getDogAge();
         this.dogGender = dogUpdateRequestDto.getDogGender();

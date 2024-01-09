@@ -1,18 +1,23 @@
 package gentledog.members.members.dog.application;
 
-import gentledog.members.members.dog.dto.DogDefaultUpdateRequestDto;
-import gentledog.members.members.dog.dto.DogRegistrationRequestDto;
-import gentledog.members.members.dog.dto.DogSignUpRegistrationRequestDto;
-import gentledog.members.members.dog.dto.DogUpdateRequestDto;
+import gentledog.members.members.dog.dto.in.CreateDogInDto;
+import gentledog.members.members.dog.dto.in.CreateSignUpPreviousDogInDto;
+import gentledog.members.members.dog.dto.out.GetDogBreedOutDto;
+import gentledog.members.members.dog.dto.out.GetDogListOutDto;
+import gentledog.members.members.dog.dto.out.GetDogOutDto;
+import gentledog.members.members.dog.webdto.request.UpdateDefaultDogRequestDto;
+import gentledog.members.members.dog.webdto.request.CreateDogRequestDto;
+import gentledog.members.members.dog.webdto.request.CreateSignUpPreviousDogRequestDto;
+import gentledog.members.members.dog.webdto.request.UpdateDogRequestDto;
 import gentledog.members.members.dog.entity.Dog;
 import gentledog.members.members.dog.entity.DogBreed;
 import gentledog.members.members.dog.entity.DogList;
 import gentledog.members.members.dog.infrastructure.DogBreedRepository;
 import gentledog.members.members.dog.infrastructure.DogListRepository;
 import gentledog.members.members.dog.infrastructure.DogRepository;
-import gentledog.members.members.dog.response.DogBreedInfoResponse;
-import gentledog.members.members.dog.response.DogIdInfoResponse;
-import gentledog.members.members.dog.response.DogInfoResponse;
+import gentledog.members.members.dog.webdto.response.GetDogBreedResponseDto;
+import gentledog.members.members.dog.webdto.response.GetDogIdResponseDto;
+import gentledog.members.members.dog.webdto.response.GetDogResponseDto;
 import gentledog.members.global.common.response.BaseResponseStatus;
 import gentledog.members.global.common.exception.BaseException;
 import gentledog.members.members.members.entity.Members;
@@ -51,15 +56,20 @@ public class DogServiceImple implements DogService {
     private final DogBreedRepository dogBreedRepository;
     private final ModelMapper modelMapper;
 
+
+    /**
+     * 유저 회원가입 시 반려견 등록
+     * @param createSignUpPreviousDogInDto
+     */
     @Override
-    public void signUpRegisterDog(DogSignUpRegistrationRequestDto dogSignUpRegistrationRequestDto) {
-        Members members = membersRepository.findByMembersEmail(dogSignUpRegistrationRequestDto.getMembersEmail())
+    public void signUpRegisterDog(CreateSignUpPreviousDogInDto createSignUpPreviousDogInDto) {
+        Members members = membersRepository.findByMembersEmail(createSignUpPreviousDogInDto.getMembersEmail())
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
         // 첫 회원가입 반려견은 true로 설정
-        Dog dog = modelMapper.map(dogSignUpRegistrationRequestDto, Dog.class);
+        Dog dog = modelMapper.map(createSignUpPreviousDogInDto, Dog.class);
 
         // dogbreedId로 dogBreed 조회 및 dog에 저장
-        DogBreed dogBreed = dogBreedRepository.findById(dogSignUpRegistrationRequestDto.getDogBreed())
+        DogBreed dogBreed = dogBreedRepository.findById(createSignUpPreviousDogInDto.getDogBreed())
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_DOG_BREED));
         dog.setDogBreed(dogBreed);
         dogRepository.save(dog);
@@ -76,23 +86,23 @@ public class DogServiceImple implements DogService {
 
     /**
      * 유저 반려견 등록
-     * @param dogRegistrationRequestDto
+     * @param createDogInDto
      */
     @Override
-    public void registerDog(String membersEmail, DogRegistrationRequestDto dogRegistrationRequestDto) {
+    public void registerDog(String membersEmail, CreateDogInDto createDogInDto) {
         Members members = membersRepository.findByMembersEmail(membersEmail)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
-        Dog dog = modelMapper.map(dogRegistrationRequestDto, Dog.class);
+        Dog dog = modelMapper.map(createDogInDto, Dog.class);
 
         // dogbreedId로 dogBreed 조회 및 dog에 저장
-        DogBreed dogBreed = dogBreedRepository.findById(dogRegistrationRequestDto.getDogBreed())
+        DogBreed dogBreed = dogBreedRepository.findById(createDogInDto.getDogBreed())
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_DOG_BREED));
         dog.setDogBreed(dogBreed);
         dogRepository.save(dog);
 
         // dogRegistrationRequestDto getDefaultDog가 true이고 기존에 defaultDog가 true인 값이 있다면 false로 변경
-        if (dogRegistrationRequestDto.getDefaultDog()) {
+        if (createDogInDto.getDefaultDog()) {
             Optional<DogList> dogList = dogListRepository.findByMembersIdAndDefaultDog(members.getId(), true);
             dogList.ifPresent(list -> list.updateDefaultDog(false));
         }
@@ -101,7 +111,7 @@ public class DogServiceImple implements DogService {
         DogList dogList = DogList.builder()
                 .dog(dog)
                 .members(members)
-                .defaultDog(dogRegistrationRequestDto.getDefaultDog())
+                .defaultDog(createDogInDto.getDefaultDog())
                 .build();
 
         dogListRepository.save(dogList);
@@ -113,11 +123,11 @@ public class DogServiceImple implements DogService {
      * @return
      */
     @Override
-    public List<DogBreedInfoResponse> getDogBreedInfo() {
+    public List<GetDogBreedOutDto> getDogBreedList() {
         log.info("dogBreedRepository.findAll() : {}", dogBreedRepository.findAll());
         return dogBreedRepository.findAll()
                 .stream()
-                .map(dogBreed -> modelMapper.map(dogBreed, DogBreedInfoResponse.class))
+                .map(dogBreed -> modelMapper.map(dogBreed, GetDogBreedOutDto.class))
                 .toList();
     }
 
@@ -128,12 +138,12 @@ public class DogServiceImple implements DogService {
      * @return
      */
     @Override
-    public DogInfoResponse getDogInfo(String membersEmail, Long dogId) {
+    public GetDogOutDto getDogById(String membersEmail, Long dogId) {
         Dog dog = dogRepository.findById(dogId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_DOG));
 
-        DogInfoResponse dogInfoResponse = modelMapper.map(dog, DogInfoResponse.class);
-        return dogInfoResponse.toBuilder()
+        GetDogOutDto getDogOutDto = modelMapper.map(dog, GetDogOutDto.class);
+        return getDogOutDto.toBuilder()
                 .dogBreedKorName(dog.getDogBreed().getDogBreedKorName())
                 .build();
 
@@ -145,7 +155,7 @@ public class DogServiceImple implements DogService {
      * @return
      */
     @Override
-    public List<DogInfoResponse> getDogInfo(String membersEmail) {
+    public List<GetDogListOutDto> getDogList(String membersEmail) {
         Members members = membersRepository.findByMembersEmail(membersEmail)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
         // 유저의 반려견 리스트 조회
@@ -156,15 +166,14 @@ public class DogServiceImple implements DogService {
                 .map(item -> {
                     Dog myDog = item.getDog(); // DogList 엔터티에서 Dog 객체를 가져옴
                     // dogInfoResponse값 넣어줌
-                    DogInfoResponse dogInfoResponse = modelMapper.map(myDog, DogInfoResponse.class);
+                    GetDogListOutDto getDogListOutDto = modelMapper.map(myDog, GetDogListOutDto.class);
                     // dogbreedname값 넣어줌
-                    dogInfoResponse = dogInfoResponse.toBuilder()
+                    getDogListOutDto = getDogListOutDto.toBuilder()
                             .dogBreedKorName(myDog.getDogBreed().getDogBreedKorName())
                             .defaultDog(item.getDefaultDog())
                             .build();
-                    return dogInfoResponse;
-                })
-                .toList();
+                    return getDogListOutDto;
+                }).toList();
 
     }
 
@@ -198,7 +207,7 @@ public class DogServiceImple implements DogService {
      * @param dogUpdateRequestDto
      */
     @Override
-    public void updateDog(Long dogId, DogUpdateRequestDto dogUpdateRequestDto) {
+    public void updateDog(Long dogId, UpdateDogRequestDto dogUpdateRequestDto) {
 
         Dog dog = dogRepository.findById(dogId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_DOG));
@@ -209,29 +218,29 @@ public class DogServiceImple implements DogService {
     /**
      * 대표 반려견 변경
      * @param membersEmail
-     * @param dogDefaultUpdateRequestDto
+     * @param updateDefaultDogRequestDto
      * @return
      */
     @Override
-    public DogIdInfoResponse updateRepresentativeDog(String membersEmail, DogDefaultUpdateRequestDto dogDefaultUpdateRequestDto) {
+    public GetDogIdResponseDto updateRepresentativeDog(String membersEmail, UpdateDefaultDogRequestDto updateDefaultDogRequestDto) {
 
         Members members = membersRepository.findByMembersEmail(membersEmail)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
         // 1. null이 아니라면 기존 대표 반려견 정보 조회 하고 false로 변경
-        if (dogDefaultUpdateRequestDto.getOldDefaultDogId() != null) {
+        if (updateDefaultDogRequestDto.getOldDefaultDogId() != null) {
             DogList dogList = dogListRepository.findByMembersIdAndDogId(members.getId(),
-                    dogDefaultUpdateRequestDto.getOldDefaultDogId());
+                    updateDefaultDogRequestDto.getOldDefaultDogId());
             dogList.updateDefaultDog(false);
         }
 
         // 2. newDogId로 dogList의 defaultDog를 true로 변경
-        DogList dogList = dogListRepository.findByDogId(dogDefaultUpdateRequestDto.getNewDefaultDogId());
+        DogList dogList = dogListRepository.findByDogId(updateDefaultDogRequestDto.getNewDefaultDogId());
         dogList.updateDefaultDog(true);
 
         // 3. dogList에서 대표 반려견 이미지를 전달해준다.
         Dog dog = dogList.getDog();
-        return DogIdInfoResponse.builder()
+        return GetDogIdResponseDto.builder()
                 .DogId(dog.getId())
                 .build();
     }

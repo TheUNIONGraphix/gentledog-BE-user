@@ -3,13 +3,17 @@ package gentledog.members.members.members.presentation;
 import gentledog.members.global.common.response.BaseResponse;
 import gentledog.members.members.members.application.AuthenticationService;
 import gentledog.members.members.members.application.MembersService;
-import gentledog.members.members.members.dto.*;
-import gentledog.members.members.members.response.SignInResponse;
-import gentledog.members.members.members.response.MembersFindEmailResponse;
-import gentledog.members.members.members.response.MembersInfoResponse;
+import gentledog.members.members.members.dto.in.*;
+import gentledog.members.members.members.dto.out.SignInOutDto;
+import gentledog.members.members.members.webdto.request.*;
+import gentledog.members.members.members.webdto.response.RegenerateTokenResponseDto;
+import gentledog.members.members.members.webdto.response.SignInResponseDto;
+import gentledog.members.members.members.webdto.response.GetMembersEmailResponseDto;
+import gentledog.members.members.members.webdto.response.GetMembersResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,6 +24,7 @@ public class MembersController {
 
     private final AuthenticationService authenticationService;
     private final MembersService membersService;
+    private final ModelMapper modelMapper;
 
     /**
      *
@@ -38,52 +43,69 @@ public class MembersController {
     @Operation(summary = "회원가입", description = "회원가입", tags = { "Members Sign" })
     @PostMapping("/signup")
     public BaseResponse<?> signUp(@RequestBody SignUpRequestDto signUpRequestDto) {
-            authenticationService.signUp(signUpRequestDto);
-            return new BaseResponse<>();
+
+        SignUpInDto signUpInDto = modelMapper.map(signUpRequestDto, SignUpInDto.class);
+        authenticationService.signUp(signUpInDto);
+        return new BaseResponse<>();
     }
 
     @Operation(summary = "로그인", description = "로그인", tags = { "Members Sign" })
     @PostMapping("/signin")
-    public BaseResponse<SignInResponse> signIn(@RequestBody SignInRequestDto signinRequestDto) {
-            SignInResponse signInResponse = authenticationService.signIn(signinRequestDto);
-            return new BaseResponse<>(signInResponse);
+    public BaseResponse<SignInResponseDto> signIn(@RequestBody SignInRequestDto signinRequestDto) {
+
+        SignInInDto signInInDto = modelMapper.map(signinRequestDto, SignInInDto.class);
+        SignInOutDto signInOutDto = authenticationService.signIn(signInInDto);
+        SignInResponseDto signInResponseDto = modelMapper.map(signInOutDto, SignInResponseDto.class);
+
+        return new BaseResponse<>(signInResponseDto);
     }
 
-    @Operation(summary = "유저 정보 조회", description = "유저 정보 조회", tags = { "Members Sign" })
+    @Operation(summary = "유저 조회", description = "유저 조회", tags = { "Members Sign" })
     @GetMapping("/info")
-    public BaseResponse<MembersInfoResponse> getMembersInfo(@RequestHeader("membersEmail") String membersEmail) {
-        // 토큰값에서 loginId 추출
-        MembersInfoResponse membersInfoResponse = membersService.getMembersInfo(membersEmail);
-        return new BaseResponse<>(membersInfoResponse);
+    public BaseResponse<GetMembersResponseDto> getMembers(@RequestHeader("membersEmail") String membersEmail) {
+
+        GetMembersResponseDto getMembersResponseDto = modelMapper.map(membersService.getMembers(membersEmail),
+                GetMembersResponseDto.class);
+
+        return new BaseResponse<>(getMembersResponseDto);
     }
 
     @Operation(summary = "유저 정보 수정", description = "유저 정보 수정", tags = { "Members Sign" })
     @PutMapping("/info")
-    public BaseResponse<?> updateMembersInfo(@RequestHeader("membersEmail") String membersEmail,
-                                             @RequestBody MembersInfoUpdateDto membersInfoUpdateDto) {
+    public BaseResponse<?> updateMembers(@RequestHeader("membersEmail") String membersEmail,
+                                         @RequestBody UpdateMembersRequestDto updateMembersRequestDto) {
 
-        membersService.updateMembersInfo(membersEmail, membersInfoUpdateDto);
+        UpdateMembersInDto updateMembersInDto = modelMapper.map(updateMembersRequestDto, UpdateMembersInDto.class);
+        membersService.updateMembers(membersEmail, updateMembersInDto);
         return new BaseResponse<>();
     }
 
     @Operation(summary = "유저 이메일 찾기", description = "유저 이메일 찾기", tags = { "Members Sign" })
     @GetMapping("/email")
-    public BaseResponse<MembersFindEmailResponse> findmembersEmail(@RequestParam("phonenumber") String membersPhoneNumber) {
-        MembersFindEmailResponse membersFindEmailResponse = membersService.findMembersEmail(membersPhoneNumber);
-        return new BaseResponse<>(membersFindEmailResponse);
+    public BaseResponse<GetMembersEmailResponseDto> getMembersEmail(@RequestParam("phonenumber")
+                                                                         String membersPhoneNumber) {
+
+        GetMembersEmailResponseDto getMembersEmailResponseDto = modelMapper.map(
+                membersService.getMembersEmail(membersPhoneNumber), GetMembersEmailResponseDto.class);
+        return new BaseResponse<>(getMembersEmailResponseDto);
     }
 
     @Operation(summary = "유저 비밀번호 수정", description = "유저 비밀번호 수정", tags = { "Members Sign" })
     @PutMapping("/password")
     public BaseResponse<?> updateMembersPassword(@RequestHeader("membersEmail") String membersEmail,
-                                                 @RequestBody MembersPasswordUpdateDto membersPasswordUpdateDto) {
-        membersService.updateMembersPassword(membersEmail, membersPasswordUpdateDto.getPassword());
+                                                 @RequestBody UpdateMembersPasswordRequestDto
+                                                         updateMembersPasswordRequestDto) {
+
+        UpdateMembersPasswordInDto updateMembersPasswordInDto = modelMapper.map(
+                updateMembersPasswordRequestDto, UpdateMembersPasswordInDto.class);
+        membersService.updateMembersPassword(membersEmail, updateMembersPasswordInDto.getPassword());
         return new BaseResponse<>();
     }
 
     @Operation(summary = "유저 탈퇴", description = "유저 탈퇴", tags = { "Members Sign" })
     @PutMapping("/withdraw")
     public BaseResponse<?> withdraw(@RequestHeader("membersEmail") String membersEmail) {
+
         membersService.withdraw(membersEmail);
         return new BaseResponse<>();
     }
@@ -91,17 +113,22 @@ public class MembersController {
     @Operation(summary = "유저 로그아웃", description = "유저 로그아웃", tags = { "Members Sign" })
     @PostMapping("/signout")
     public BaseResponse<?> signOut(@RequestHeader("membersEmail") String membersEmail) {
+
         authenticationService.signOut(membersEmail);
         return new BaseResponse<>();
     }
 
     @Operation(summary = "토큰 재발급", description = "access token이 만료 됐다면 실행", tags = { "Members Sign" })
     @PostMapping("/refresh")
-    public BaseResponse<SignInResponse> regenerateToken(@RequestHeader("membersEmail") String membersEmail,
-                                                        @RequestBody RefreshTokenRequestDto refreshTokenRequestDto) {
+    public BaseResponse<RegenerateTokenResponseDto> regenerateToken(@RequestHeader("membersEmail") String membersEmail,
+                                                           @RequestBody RegenerateTokenRequestDto
+                                                                   regenerateTokenRequestDto) {
 
-        SignInResponse signInResponse = authenticationService.regenerateToken(membersEmail, refreshTokenRequestDto.getRefreshToken());
-        return new BaseResponse<>(signInResponse);
+        RegenerateTokenInDto regenerateTokenInDto = modelMapper.map(regenerateTokenRequestDto,
+                RegenerateTokenInDto.class);
+        RegenerateTokenResponseDto regenerateTokenResponseDto = modelMapper.map(authenticationService.regenerateToken(membersEmail,
+                regenerateTokenInDto.getRefreshToken()), RegenerateTokenResponseDto.class);
+        return new BaseResponse<>(regenerateTokenResponseDto);
 
     }
 
