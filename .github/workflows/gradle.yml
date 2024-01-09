@@ -50,6 +50,7 @@ jobs:
             ${{ runner.os }}-gradle-  
 
       # application-prod.yml 생성
+       # touch : 파일을 생성
        # echo + > : '>'는 기존에 동일한 이름의 파일이 없다면 생성하고, 동일한 파일이 있다면 새로운 파일로 덮어쓰기 한다
        # echo + >> : '>>'를 사용하면 기존에 파일이 없다면 생성하고, 동일한 파일이 있다면 파일 내부에 새로운 내용을 추가하는 방식으로 동작
       - name: make application-prod.yml
@@ -76,10 +77,13 @@ jobs:
       
       # 도커 이미지 빌드 & 이미지를 도커허브로 push
       - name: Docker build & push to dockerhub
+        # -f 뒤에는 도커파일 명을, /뒤에는 도커허브 저장소 명을 적는다
+        # 이메일 회원가입을 진행했다면, DOCKER_PASSWORD에는 token값을 적으면 된다
+        # 도커 유저네임에는 도커허브 이름을 적는다(이메일이 아님)
         run: |
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-            docker build -f Dockerfile-prod -t ${{ secrets.DOCKER_REPO }}/members-prod .
-            docker push ${{ secrets.DOCKER_REPO }}/members-prod
+            docker build -f Dockerfile -t ${{ secrets.DOCKER_REPO }}/gentledog-develop .
+            docker push ${{ secrets.DOCKER_REPO }}/gentledog-develop
           
       # ec2에 ssh로 접속하여 도커 이미지 실행
       - name: Deploy to prod
