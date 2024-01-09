@@ -1,0 +1,99 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
+# 워크플로우 이름
+name: CI/CD
+
+# 어떤 브랜치에서, 어떤 행동이 일어날 때 ci/cd가 일어날 것인지를 설정
+on:
+  push:
+    branches: [ "feature/test" ]
+  pull_request:
+    types: [closed]
+    branches: [ "feature/test" ]
+
+# 워크플로우가 깃 레포에 대한 권한을 읽기 만 가능하게 설정
+permissions:  
+  contents: read
+
+# 워크플로우에서 할 작업 정의
+jobs:
+  CI-CD:
+    # 작업 환경 = 우분투 최신 버전
+    runs-on: ubuntu-latest
+
+    # 깃허브에서 제공하는 checkout 액션 사용
+    steps:
+      - uses: actions/checkout@v3
+    
+      # jdk 17 설정
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          # temurin = Adoptium에서 제공하는 JDK
+          distribution: 'temurin'
+        
+      # gradle caching - 캐싱을 통한 빌드 시간 향상 (젠킨스에서는 기본 동작하지만, 깃액션은 직접 설정해줘야함)
+      - name: Gradle Caching
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-  
+
+      # application-prod.yml 생성
+       # echo + > : '>'는 기존에 동일한 이름의 파일이 없다면 생성하고, 동일한 파일이 있다면 새로운 파일로 덮어쓰기 한다
+       # echo + >> : '>>'를 사용하면 기존에 파일이 없다면 생성하고, 동일한 파일이 있다면 파일 내부에 새로운 내용을 추가하는 방식으로 동작
+      - name: make application-prod.yml
+        run: |
+            mkdir -p ./src/main/resources
+            cd ./src/main/resources
+            touch ./application.yml
+            echo '${{ secrets.DEVELOP_YML }}' > ./application.yml
+            echo '${{ secrets.DEVELOP_MEMBERS_YML }}' >> ./application.yml
+            echo '${{ secrets.DEVELOP_ORDERS_YML }}' >> ./application.yml
+            echo '${{ secrets.DEVELOP_WISH_YML }}' >> ./application.yml
+            echo '${{ secrets.DEVELOP_REVIEW_YML }}' >> ./application.yml
+        shell: bash
+
+      # gradle wrapper 파일에 실행 권한을 부여
+        # gradle wrapper = 개발자가 특정 버전의 Gradle을 미리 설치하지 않고도 Gradle 빌드를 실행할 수 있게 해주는 편리한 도구
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # Gradle 빌드 액션을 이용해서 프로젝트 빌드
+      - name: Build with Gradle
+        # -x test 옵션을 사용하면, 테스트 없이 빌드
+        run: ./gradlew build -x test
+      
+      # 도커 이미지 빌드 & 이미지를 도커허브로 push
+      - name: Docker build & push to dockerhub
+        run: |
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker build -f Dockerfile-prod -t ${{ secrets.DOCKER_REPO }}/members-prod .
+            docker push ${{ secrets.DOCKER_REPO }}/members-prod
+          
+      # ec2에 ssh로 접속하여 도커 이미지 실행
+      - name: Deploy to prod
+        uses: appleboy/ssh-action@master
+        id: deploy-prod
+        with:
+          host: ${{ secrets.HOST_EC2 }} # EC2 퍼블릭 IPv4 DNS
+          username: ubuntu
+          key: ${{ secrets.PRIVATE_KEY }}
+          envs: GITHUB_SHA
+          script: |
+            sudo docker ps
+            sudo docker stop gen-members
+            sudo docker rm gen-members
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/gentledog-develop
+            sudo docker run -d —name gen-members -p {{ secrets.MEMBERS_SERVICE_PORT }}:8000 —network gentledog ${{ secrets.DOCKER_USERNAME }}/gentledog-develop
+            sudo docker image prune -f
