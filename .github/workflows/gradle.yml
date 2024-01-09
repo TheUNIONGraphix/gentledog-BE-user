@@ -99,5 +99,5 @@ jobs:
             sudo docker stop gen-members
             sudo docker rm gen-members
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/gentledog-develop
-            sudo docker run -d --name gen-members -p {{ secrets.MEMBERS_SERVICE_PORT }}:8000 --network root_gentledog ${{ secrets.DOCKER_USERNAME }}/gentledog-develop
+            sudo docker run -d --name gen-members -p ${{ secrets.MEMBERS_SERVICE_PORT }}:8000 --network root_gentledog ${{ secrets.DOCKER_USERNAME }}/gentledog-develop
             sudo docker image prune -f
